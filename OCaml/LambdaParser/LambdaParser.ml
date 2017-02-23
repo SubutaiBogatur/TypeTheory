@@ -62,3 +62,31 @@ let lambda_of_string s =
 		else App(prev, parse_lambda ()) in 
 
 	parse_lambda ();;
+
+(* Function substitutes v_new in all !free! occurences of v_old in lambda *)
+(* lambda -> string -> string -> lambda *)
+let rec subst l v_old v_new =
+	match l with 
+		Var v -> if v = v_old then Var v_new else Var v
+		| Abs (v, x) -> 
+			(* If v_old is enslaved by lambda, it's not free, no more subst *)
+			if v = v_old then l else Abs (v, subst x v_old v_new)
+		| App (x, y) ->
+			App (subst x v_old v_new, subst y v_old v_new);;
+	
+
+(* lambda -> lambda -> bool *)
+let rec is_alpha_equivalent x y =
+	match (x, y) with
+		(Var a, Var b) -> a = b (* Check if same vars *)
+		| (App (p, q), App(r, s)) ->
+			(is_alpha_equivalent p r) && (is_alpha_equivalent q s)	
+		| (Abs (v1, p), Abs (v2, q)) ->
+			let v = "t" in (* Todo function to generate them *)
+			is_alpha_equivalent (subst p v1 v) (subst q v2 v)
+		| _ -> false;; 
+
+
+
+
+
