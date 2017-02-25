@@ -33,12 +33,15 @@ let t3 = (lambda_of_string "\\x.xy", lambda_of_string "\\y.yy");;
 let t4 = (lambda_of_string "\\x.x", lambda_of_string "\\y.y");;
 let t5 = (lambda_of_string "(\\x.x)(z)(w)", lambda_of_string "(\\y.y)(z)(w)");;
 let t6 = (lambda_of_string "\\x1.\\x2.\\x3.\\x4.x1x2x3x4", lambda_of_string "\\y1.\\y2.\\y3.\\y4.y1y2y3y4");;
-let t7 = (lambda_of_string "\\x1.\\x2.\\x3.\\x4.x4x2x3x1", lambda_of_string "(\\y.y)(z)(w)");;
+let t7 = (lambda_of_string "\\x1.\\x2.\\x3.\\x4.x4x2x3x1", lambda_of_string "\\y1.\\y2.\\y3.\\y4.y1y2y3y4");;
+let t8 = (lambda_of_string "\\x1.\\x2.x1x2", lambda_of_string "\\y1.\\y2.y2y1");;
 
-tester_eq t1;
+(*tester_eq t1;
 tester_eq t2;
 tester_eq t3;
 tester_eq t4;
 tester_eq t5;
 tester_eq t6;
-tester_eq t7;
+tester_eq t7;*)
+tester_eq t8;
+
