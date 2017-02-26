@@ -118,7 +118,7 @@ module StringSet = Set.Make (String);;
 
 (* Functions checks if theta is free for substitution instead of var in alpha *)
 (* lambda -> lambda -> string -> bool *)
-let is_free_for_subst theta alpha var =
+let free_subst theta alpha var =
 	
 	(* Function returns set with all free (ie not under lambdas) vars in l *)
 	(* lambda -> StringSet -> StringSet*)	
@@ -132,12 +132,25 @@ let is_free_for_subst theta alpha var =
 				all_free_vars x (StringSet.add v blocked)
 			| App(x, y) ->
 				StringSet.union (all_free_vars x blocked) (all_free_vars y blocked) in
-	all_free_vars theta StringSet.empty;;
 
-(*
-let theta = lambda_of_string "(x)(y)(\\x.x)(\\z.z)(\\w.\\v.u)(\\a.b)";;
-print_string_list (StringSet.elements (is_free_for_subst theta (Var "x") "x"));;
-*)
+	(* Function gets theta to substitute in l instead of all occurences of 
+		v in l. Moreover it gets two sets: set of all free vars in theta
+		and set of vars blocked by lambda in current node. Function
+		returns bool: true if no free vars from theta become blocked
+		when theta is substituted instead of all !free! occurences
+		of v in l*)
+	(* StringSet -> StringSet -> lambda -> lambda -> string -> bool*) 
+	let rec impl fs bs l v =
+		match l with
+			App(x, y) -> (impl fs bs x v) && (impl fs bs y v)
+			| Abs(u, x) -> if u = v then true
+						else impl fs (StringSet.add u bs) x v
+			| Var(u) -> if u = v then ((StringSet.inter fs bs) = StringSet.empty)
+						else true in
+
+	let free_set = all_free_vars theta StringSet.empty in
+	impl free_set StringSet.empty alpha var;;
+
 
 
 

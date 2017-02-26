@@ -1,12 +1,20 @@
 open LambdaParser;;
 
 let fst t =
-	let (x, y) = t in
+	let (x, y, z, f) = t in
 	x;;
 
 let snd t =
-	let (x, y) = t in
+	let (x, y, z, f) = t in
 	y;;
+
+let thd t =
+	let (x, y, z, f) = t in
+	z;;
+
+let frh t =
+	let (x, y, z, f) = t in
+	f;;
 
 (* Tests for parser *)
 (* print_string (string_of_lambda (lambda_of_string "\\x.\\y.xy")); print_string "\n";;
@@ -20,6 +28,7 @@ print_string (string_of_lambda (lambda_of_string "x1")); print_string "\n";; *)
 
 (* Tests for is_alpha_equivalent function *)
 
+(*
 let tester_eq tup =
 	print_string 
 		(string_of_bool
@@ -43,5 +52,31 @@ tester_eq t4;
 tester_eq t5;
 tester_eq t6;
 tester_eq t7;*)
-tester_eq t8;
+tester_eq t8;*)
 
+(* Tests for free_subst *)
+
+let tester tup =
+	print_string (if free_subst (fst tup) (snd tup) (thd tup) =  (frh tup)
+			then "ok\n"
+			else "epic fail!!\n");;
+
+
+(* theta alpha var result *)
+let t1 = (lambda_of_string "x", lambda_of_string "\\x.y", "y", false);;
+let t2 = (lambda_of_string "x", lambda_of_string "\\x.x", "y", true);;
+let t3 = (lambda_of_string "x", lambda_of_string "(x)(\\x.y)", "y", false);;
+let t4 = (lambda_of_string "xy\\z.z", lambda_of_string "\\x.a", "a", false);;
+let t5 = (lambda_of_string "xy\\z.z", lambda_of_string "\\y.a", "a", false);;
+let t6 = (lambda_of_string "xy\\z.z", lambda_of_string "\\z.a", "a", true);;
+let t7 = (lambda_of_string "xy\\z.z", lambda_of_string "a(\\z.a)", "a", true);;
+let t8 = (lambda_of_string "xy\\z.z", lambda_of_string "\\x.b", "a", true);;
+
+tester t1;;
+tester t2;;
+tester t3;;
+tester t4;;
+tester t5;;
+tester t6;;
+tester t7;;
+tester t8;;
