@@ -1,5 +1,6 @@
 module Commutativity
 
+||| First homework ie proving commutativity of addition
 lemmaAbbA : a = b -> b = a
 lemmaAbbA Refl = Refl
 
@@ -22,32 +23,39 @@ comm (S k) b = let ih = comm k b in
 		let prev = cong ih in 
 		rewrite lem in prev
 
-cong2 : (a:Nat) -> (b:Nat) -> (pf: a + b = c) -> (a + (S b) = (S (c)))
-cong2 Z b Refl = Refl
-cong2 (S k) b Refl = 
-	let ih = cong2 k b Refl in
-	cong ih	
 
-lemmaNau : (x:Nat) -> (pf : x + x = x + x) -> (S x) + (S x) = S (S x + x)
-lemmaNau Z Refl = Refl
-lemmaNau (S kk) Refl = 
-		let ih = lemmaNau kk Refl in
-		let c1 = cong ih in
-		let c2 = cong2 (S (S kk)) (S kk) c1 in	
-		c2
-
+||| Here second homework starts
 data Even : Nat -> Type where
 	ZE : Even Z
 	SSE : Even k -> Even (S (S k))
 
-evenIsEven: Even k -> (x : Nat ** (plus x x) = k) -- ie return that exist such x depending on k
-evenIsEven ZE = (Z ** Refl) 
-evenIsEven (SSE e) = 
-		let (x ** eq) = evenIsEven e in
-		let congapp = cong eq in 
-		let commres = comm (S x) x in
-		?hole
+getLen : Even k -> Nat
+getLen ZE = Z
+getLen (SSE e) = (getLen e) + 2
 
+getHalfLen : Even k -> Nat
+getHalfLen ZE = Z
+getHalfLen (SSE e) = (getHalfLen e) + 1
+
+tmp1 : (a : Nat) -> (b : Nat) -> (k : Nat) -> a + b = k -> (S a) + b = (S k)
+tmp1 a b k eq = cong eq
+
+tmp2 : (a : Nat) -> (b : Nat) -> (k : Nat) -> a + b = k -> a + (S b) = (S k)
+tmp2 a b k eq =
+	rewrite (lemma1 a b) in (cong eq)
+	
+
+doubleInc : (x : Nat) -> x + x = k -> (S x) + (S x) = (S (S k))
+doubleInc Z Refl = Refl
+doubleInc (S x) eq = 
+		--let ih = doubleInc x eq in
+		?di	
+
+evenIsEven : Even k -> (x : Nat ** x + x = k) -- ie return that exist such x depending on k
+evenIsEven ZE = (Z ** Refl) 
+evenIsEven (SSE e) =  
+		let ih = evenIsEven e in
+		?eie
 
 
 
