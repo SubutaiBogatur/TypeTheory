@@ -1,27 +1,95 @@
 type algebraic_term = Var of string | Fun of string * (algebraic_term list)
 
 
-(* todo beatiful and nice and elegant visualization pls *)
-let rec list_to_string x str = match x with
-         |[]-> str
-         |h::t -> type_to_string h (" " ^  (list_to_string t str))
+(* ---------------------------- Util functions ----------------------------- *)
 
-and type_to_string x str = match x with 
-        |Var a -> a ^ " " ^ str
-        |Fun(a, b) -> "(" ^ a ^ " " ^ (list_to_string b str) ^ ")" ;;
+let term_to_string at =
+	
+	let rec impl at =
+		match at with
+			Var v -> v
+			| Fun(f, args) -> f ^ "(" ^ (impl_l args) ^ ")"
+	and impl_l l =
+		match l with
+			[] -> "" 
+			| (h::[]) -> (impl h) (* for last arg no last space *)
+			| (h::t) -> (impl h) ^ " " ^ (impl_l t) in
+	
+	impl at;;
 
-let rec system_to_string x str = match x with
-        |[] -> str
-        |(l,r)::t -> type_to_string l "" ^ "= " ^  type_to_string r "" ^ "\n" ^ system_to_string t str;;
+let equation_to_string eq =
+	let lhs, rhs = eq in
+	term_to_string lhs ^ " = " ^ term_to_string rhs;;
 
-let print_equation eq str =
-	system_to_string [eq] str;;
 
-let print_eq sys = 
-	print_equation sys "";; 
+let rec system_to_string sys =
+	match sys with
+		[] -> ""
+		| (h::t) -> (equation_to_string h) ^ "\n" ^ (system_to_string t);;			
 
-let ps sys =
-	print_string (system_to_string sys "");
+(* Println algebraic term *)
+let pat at = 
+	print_string (term_to_string at);
+	print_string "\n";;
+
+(* Println equation *)
+let peq eq =
+	print_string (equation_to_string eq);
+	print_string "\n";;
+
+(* Println system *)
+let psys sys =
+	print_string (system_to_string sys);;
+	
+(* Function gets str and at and checks if str is met in at.
+	If it is not met 0 is returned.
+	If it is met only as variable 1 is returned.
+	If it is met only as function 2 is returned.
+	If it is met both as var and fun 3 is retuned.
+	Consider using not this function, but mem functions instead*)
+(* string -> at -> int *)
+let rec contains str at msk = 
+	match at with
+		(Var a) -> if a = str then msk lor 1 else msk 
+		| (Fun (f, l)) -> (contains_l str l msk) lor (if str = f then 2 else 0)
+and contains_l str l msk =
+	match l with
+		[] -> msk
+		| (h::t) -> (contains str h msk) lor (contains_l str t msk);; 
+
+(* Mem functions' names come from mem function in Set and Map modules *)
+(* string -> at -> bool *)
+let mem str at =
+	contains str at 0 <> 0;;
+
+let memf str at =
+	contains str at 0 land 2 <> 0;;
+
+let memv str at =
+	contains str at 0 land 1 <> 0;;
+
+(* Test samples *)
+(* Here are some basic examples to do tests on *)
+
+let sys0 = [(Var "a", Var "b"); (Var "c", Var "d")];;
+let sys1 = [(Fun("f",[Var "x"]), Fun("f",[Fun("g",[Var "y"])])); (Var "y", Fun("h",[Var "p"]))];;
+let sys2 = [(Fun("f",[Var "a"]), Var "b")];;
+let sys3 = [Fun("f",[Var "a"; Var "b"]), Fun("f",[Var "x"; Var "y"])];;
+
+let at0 = Var "a";;
+let at1 = Var "b";;
+let at2 = Var "c";;
+let at3 = Var "d";;
+let at4 = Fun("f",[Var "x"]);;
+let at5 = Fun("f",[Fun("g",[Var "y"])]);;
+let at6 = Fun("h",[Var "p"]);;
+let at7 = Fun("f",[Var "a"; Var "b"]);;
+let at8 = Fun("f",[Var "x"; Var "y"]);;
+let at9 = Fun("f",[at5; at7]);;
+
+(* Print bool *)
+let pb b =
+	print_string (string_of_bool b);
 	print_string "\n";;
 
 
@@ -33,29 +101,21 @@ let ps sys =
 	function. Maybe implementation should be changed *)
 let get_fresh_fun_name system =
 
-	(* Function with same meaning but for one algebraic term *)
-	let rec get_fresh_name_at at =
-		let rec impl at str = 
-			match at with
-				Var v -> str (* maybe should do v ^ str *)
-				| Fun (f, atl) -> f ^ get_fresh_name_l atl in 
-		impl at ""
-	
-	
-	and get_fresh_name_l l =
-		let rec impl l str =
-			match l with
-				[] -> str
-				| (h :: t) -> (get_fresh_name_at h) ^ (impl t str) in
-		impl l "" in
+	let rec mem_sys str sys =
+		
+		let mem_eq str eq =
+			let l, r = eq in
+			(mem str l) || (mem str r) in
 
-	(* Function gets system and string to concat with *)
-	let rec impl system str =
-		match system with
-			[] -> str
-			| (lhs, rhs)::t -> (get_fresh_name_at lhs) ^ (get_fresh_name_at rhs) ^ (impl t str) in 
-	impl system "fresh";;
-			
+		match sys with
+			[] -> false
+			| (h::t) -> (mem_eq str h) || (mem_sys str t) in 
+	
+	let rec impl str system counter =
+		if (mem_sys (str ^ string_of_int counter) system) 
+		then impl str system (counter + 1) else (str ^ string_of_int counter) in
+
+	impl "fresh" system 1;;
 
 let rec eq_helper x ll rr = match x with 
         |[] -> ll, rr
@@ -66,28 +126,8 @@ let system_to_equation x =
         let fresh_name = get_fresh_fun_name x in
 	(Fun(fresh_name, l), Fun(fresh_name, r));;
 
+peq (system_to_equation sys3);;
 
-(* Test samples *)
-
-let sys0 = [(Var "a", Var "b"); (Var "c", Var "d")];;
-let sys1 = [(Fun("f",[Var "x"]), Fun("f",[Fun("g",[Var "y"])])); (Var "y", Fun("h",[Var "p"]))];;
-let sys2 = [(Fun("f",[Var "a"]), Var "b")];;
-let sys3 = [Fun("f",[Var "a"; Var "b"]), Fun("f",[Var "x"; Var "y"])];;
-
-(*
-print_string (print_eq (system_to_equation sys0));;
-print_string "\n";;
-
-
-print_string (print_eq (system_to_equation sys1));;
-print_string "\n";;
-
-print_string (print_eq (system_to_equation sys2));;
-print_string "\n";;
-
-print_string (print_eq (system_to_equation sys3));;
-print_string "\n";;
-*)
 
 (* ------------------------------ Apply substitution ------------------------------*)
 
@@ -170,7 +210,7 @@ print_string (string_of_bool (check_solution ["a", Var "b"; "x", Var "b"] e1));;
 
 
 (* ------------------- Robinson algorithm: here it is -------------------------- *)
-
+(*
 (* todo mb move inside *)
 exception NoSolution of string;;
 
@@ -178,15 +218,6 @@ module StringSet = Set.Make (String);;
 
 let solve_system sys =
 	
-	(* Checks if var is present in at *)
-	let rec contains var at = 
-		match at with
-			(Var a) -> a = var
-			| (Fun (f, l)) -> contains_l var l
-	and contains_l var l =
-		match l with
-			[] -> false
-			| (h::t) -> (contains var h) || (contains_l var t) in
 
 	(* Function solves the system. It gets system and set of resolved vars *)
 	(* list of pairs of at -> Set of strings -> list of pairs of at *)
@@ -209,7 +240,7 @@ let solve_system sys =
 
 
 
-
+*)
 
 
 
