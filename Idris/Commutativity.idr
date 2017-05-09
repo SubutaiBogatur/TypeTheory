@@ -45,11 +45,11 @@ tmp2 a b k eq =
 	rewrite (lemma1 a b) in (cong eq)
 	
 
-doubleInc : (x : Nat) -> x + x = k -> (S x) + (S x) = (S (S k))
-doubleInc Z Refl = Refl
-doubleInc (S x) eq = 
-		--let ih = doubleInc x eq in
-		?di	
+doubleInc : (x : Nat) -> (k : Nat) -> x + x = k -> (S x) + (S x) = (S (S k))
+doubleInc x k eq = 
+	tmp1 x (S x) (S k) u where
+		u = tmp2 x x k eq
+
 
 evenIsEven : Even k -> (x : Nat ** x + x = k) -- ie return that exist such x depending on k
 evenIsEven ZE = (Z ** Refl) 
