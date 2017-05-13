@@ -116,9 +116,12 @@ let sys0 = [(Var "a", Var "b"); (Var "c", Var "d")];;
 let sys1 = [(Fun("f",[Var "x"]), Fun("f",[Fun("g",[Var "y"])])); (Var "y", Fun("h",[Var "p"]))];;
 let sys2 = [(Fun("f",[Var "a"]), Var "b")];;
 let sys3 = [Fun("f",[Var "a"; Var "b"]), Fun("f",[Var "x"; Var "y"])];;
+let sys4 = List.append sys1 [(at7, at2); (at7, at2)];;
 
 let isys0 = [at4, at8];;
 let isys1 = [Fun("f",[Var "y"; Fun("h",[Var "x"; Var "y"])]), Fun("f",[Fun("g",[Var "a"; Var "b"]); Fun("h", [Var "x"; Var "x"])]); Fun("h", [Var "x"; Var "y"]), Fun("h", [Var "a"; Var "a"])];;
+
+
 
 (* Print bool *)
 let pb b =
@@ -274,7 +277,7 @@ let solve_system sys =
 				print_string "\n";
 				None;;
 				
-solve_system isys1;;
+solve_system s;;
 
 	
 
