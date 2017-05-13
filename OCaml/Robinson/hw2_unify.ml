@@ -217,7 +217,7 @@ let check_solution solution sys =
 
 
 (* ------------------- Robinson algorithm: here it is -------------------------- *)
-(* todo mb move inside *)
+
 exception NoSolution of string;;
 
 module StringSet = Set.Make (String);;
@@ -242,19 +242,39 @@ let solve_system sys =
 		if StringSet.cardinal resolved = List.length sys then sys else (* If all eqs are resolved return resolved system*)	
 		match sys with
 			[] -> raise (NoSolution "Empty system")
-			| ((lhs, rhs)::tail) ->
+			| (lhs, rhs)::tail ->
 				let cur = lhs, rhs in
 				if eq_at lhs rhs then impl tail resolved else (* If (eq rhs lhs) then  just remove the equation from the system *)
 				match (lhs, rhs) with 
-					(Var a, any) -> if memv a any then raise (NoSolution "Fourth rule abused") (* Variable a is met in rhs *)
+					Var a, any -> if memv a any then raise (NoSolution "Fourth rule abused") (* Variable a is met in rhs *)
 							else let resolved = StringSet.add a resolved in
 							(* todo: mb subst if not was resolved already *)
 							impl (List.append (apply_substitution_sys [a, any] tail) [cur]) resolved 
-					| (any, Var a) -> impl (List.append tail [rhs, lhs]) resolved 
-					| (Fun(f, l1), Fun(g, l2)) -> if f <> g || List.length l1 <> List.length l2 then raise (NoSolution "Third rule abused")
+					| any, Var a -> impl (List.append tail [rhs, lhs]) resolved 
+					| Fun(f, l1), Fun(g, l2) -> if f <> g || List.length l1 <> List.length l2 then raise (NoSolution "Third rule abused")
 									else impl (List.append tail (get_args_sys l1 l2)) resolved in
-	impl sys StringSet.empty;;
+	(* Function converts system to needed return type *)
+	(* sys -> (string * at) list *)
+	let dewrap sys =
+		let rec impl sys ans =
+			match sys with 
+				[] -> List.rev ans
+				| ((Var a, rhs)::tail) -> 
+					impl tail ((a, rhs)::ans) 
+				| _ -> failwith "it's impossible, sorry" in
+		impl sys [] in
 
+	try 
+		let resolved_system = impl sys StringSet.empty in
+		print_string "Answer: \n";
+		psys resolved_system;
+		(Some (dewrap resolved_system))
+
+	with (NoSolution msg) -> print_string msg;
+				print_string "\n";
+				None;;
+				
 solve_system isys1;;
+
 	
 
