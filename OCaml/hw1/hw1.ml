@@ -169,7 +169,9 @@ let lambda_of_string s =
 
 	parse_lambda ();;
 
+(*
 print_string (string_of_lambda (lambda_of_string "(x)")); print_string "\n";; 
 print_string (string_of_lambda (lambda_of_string "(((((((\\y.y)))))))")); print_string "\n";; 
 print_string (string_of_lambda (lambda_of_string "((z)) (\\x.\\y.((x y)))")); print_string "\n";;
 print_string (string_of_lambda (lambda_of_string "\\x.x y")); print_string "\n";;
+*)

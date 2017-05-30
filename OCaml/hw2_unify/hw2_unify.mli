@@ -12,3 +12,10 @@ val check_solution: (string * algebraic_term) list -> (algebraic_term * algebrai
 (* Решить систему; если решения нет -- вернуть None *)
 val solve_system: (algebraic_term * algebraic_term) list -> (string * algebraic_term) list option
 
+
+(* -- Subsequent part of interface is needed to provide access to clients to debug utils -- *)
+
+
+(* Println system *)
+val psys: (algebraic_term * algebraic_term) list -> unit 
+
