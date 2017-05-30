@@ -22,6 +22,13 @@ let pm m =
 			|_ -> () in
 
 	impl (StringMap.bindings m);; 
+
+let st_to_string st = 
+	let rec impl st str = 
+		match st with 
+			S_Elem v -> str ^ v
+			| S_Arrow (x, y) -> str ^ (impl x "") ^ " -> " ^ (impl y "") in
+	impl st "";;
 	
 
 
@@ -74,15 +81,7 @@ let infer_simp_type l =
 			| S_Arrow (stl, str) -> Hw2_unify.Fun ("impl", [st_to_at stl; st_to_at str]) in   
 
 	let st_to_at_sys sys = 
-		let rec st_to_at_eq eq =
-			let l, r = eq in
-			(st_to_at l, st_to_at r) in
-
-		let rec impl sold snew =
-			match sold with 
-				[] -> snew
-				| h::t -> impl t ((st_to_at_eq h)::snew) in
-		impl sys [] in
+		List.map (fun (x, y) -> (st_to_at x, st_to_at y)) sys in
 
 	let rec at_to_st at =
 		match at with 
@@ -94,12 +93,7 @@ let infer_simp_type l =
 		(ie list of pairs (string, algebraic_term) to solution
 		in the terms of types ie (string, simple_type) *)
 	let at_to_st_solution solution =
-		let rec impl at_sol simple_sol =
-			match at_sol with
-				[] -> simple_sol
-				| ((var, at)::t) -> impl t ((var, at_to_st at)::simple_sol) in
-
-		impl solution [] in
+		List.map (fun (var, at) -> (var, at_to_st at)) solution in
 		
 	let simple_type_sys, res_type = impl l (list_to_map (Hw1_reduction.free_vars l) StringMap.empty) in
 	Hw2_unify.psys (st_to_at_sys simple_type_sys);	
@@ -109,5 +103,7 @@ let infer_simp_type l =
 		| Some solution -> Some (at_to_st_solution solution, 
 				at_to_st(Hw2_unify.apply_substitution solution (st_to_at res_type)));;
 
-(* Hahahahahha, test with Omega Omega combinator: *)
-infer_simp_type (Hw1.lambda_of_string "(\\x.x x) (\\x.x x)");;
+(* Hahahahahha, test with Omega Omega combinator fails, cool *)
+let Some (f, s) = infer_simp_type (Hw1.lambda_of_string "\\x.\\y.x");;
+print_string (("Resulting type: " ^ (st_to_string s)) ^ "\n");;
+
