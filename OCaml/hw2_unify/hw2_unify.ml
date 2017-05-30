@@ -277,7 +277,6 @@ let solve_system sys =
 				print_string "\n";
 				None;;
 				
-solve_system s;;
 
 	
 
