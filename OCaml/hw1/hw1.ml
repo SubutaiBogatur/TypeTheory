@@ -141,20 +141,21 @@ let lambda_of_string s =
 	let parse_name () = 
 		Var(parse_name_str ()) in
 
+
 	(* unit -> lambda *)
 	let rec parse_lambda () =
-		match (get ()) with 
-			'\\' -> 
-				(let ans = parse_abs () in
-				if_is_app ans)
-			| '(' -> 
-				(eat '(';
-				let ans = parse_lambda () in
-				eat ')'; 
-				if_is_app ans)
-			| _ ->  
-				(let ans = (parse_name ()) in
-				if_is_app ans)
+		let ans = 	
+			match (get ()) with 
+				'\\' -> 
+					parse_abs ()
+				| '(' -> 
+					(eat '(';
+					let ret = parse_lambda () in
+					eat ')'; 
+					ret)
+				| _ ->  
+					parse_name () in
+		if_is_app ans 
 
 	(* unit -> lambda *)
 	and parse_abs () = 
@@ -163,12 +164,24 @@ let lambda_of_string s =
 		eat '.';
 		Abs(name, parse_lambda ())
 
-	(* function checks if expression continues *)
+	(* function checks if expression continues and makes app left associative *)
 	(* lambda -> lambda *)	
 	and if_is_app prev = 
 		if (is_end () || s.[!pos] = ')') then prev 
 		else    (eat ' '; 
-	        	App(prev, parse_lambda ())) in 
+			match (get ()) with 
+				'\\' -> 
+					(let ans = parse_abs () in
+					 if_is_app (App (prev, ans))) 
+				| '(' -> 
+					(eat '(';
+					let ans = parse_lambda () in
+					eat ')'; 
+					if_is_app (App(prev, ans)))
+				| _ ->  
+					(let ans = (parse_name ()) in
+					if_is_app (App(prev, ans)))
+			) in
 
 	parse_lambda ();;
 
@@ -176,5 +189,12 @@ let lambda_of_string s =
 print_string (string_of_lambda (lambda_of_string "(x)")); print_string "\n";; 
 print_string (string_of_lambda (lambda_of_string "(((((((\\y.y)))))))")); print_string "\n";; 
 print_string (string_of_lambda (lambda_of_string "((z)) (\\x.\\y.((x y)))")); print_string "\n";;
+print_string (string_of_lambda (lambda_of_string "x y z")); print_string "\n";;
+print_string (string_of_lambda (lambda_of_string "\\l.\\i.\\f.\\e.(l) (i) (f) (esgood)")); print_string "\n";;
 *)
-print_string (string_of_lambda (lambda_of_string "\\x.x (y z)")); print_string "\n";;
+(*
+print_string (string_of_lambda (lambda_of_string "x y z")); print_string "\n";;
+print_string (string_of_lambda (lambda_of_string "(x y) z")); print_string "\n";;
+*)
+print_string (string_of_lambda (lambda_of_string "((\\f.(\\x.f (x x)) (\\x.f (x x))) (\\f.\\n.(\\n.n (\\x.\\x.\\y.y) \\x.\\y.x) n (\\f.\\x.f x) ((\\a.\\b.a ((\\a.\\b.\\f.\\x.a f (b f x)) b) \\f.\\x.x) n (f ((\\n.(\\p.p \\x.\\y.x) (n (\\p.\\f.f ((\\p.p \\x.\\y.y) p) ((\\n.\\f.\\x.f (n f x)) ((\\p.p \\x.\\y.y) p))) (\\f.f (\\f.\\x.x) (\\f.\\x.x)))) n))))) \\f.\\x.f (f (f (f (f (f x)))))")); print_string "\n";;
+
