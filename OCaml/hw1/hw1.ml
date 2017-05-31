@@ -1,7 +1,5 @@
 
 
-
-
 type peano = Z
 	| S of peano
 
@@ -81,7 +79,9 @@ let merge_sort l =
 				([], []) -> ans
 				| ([], h::t) -> merge_impl l1 t (h::ans)
 				| (h::t, []) -> merge_impl t l2 (h::ans)
-				| (h1::t1, h2::t2) -> if h1 < h2 then merge_impl t1 l2 (h1::ans) else merge_impl l1 t2 (h2::ans) in
+				| (h1::t1, h2::t2) -> 
+					if h1 < h2 then merge_impl t1 l2 (h1::ans)
+						   else merge_impl l1 t2 (h2::ans) in
 		let tup = merge_impl l1 l2 [] in
 		rev tup in
 
@@ -96,7 +96,7 @@ let merge_sort l =
 	merge_impl l;; 	
 
 
-(* ---------------------------- Hws for Lambdas. todo: later move to another file when creating adequate ierarchy --*)
+(* ---------------------------- Lambda expressions ---------------------- --*)
 
 type lambda = Var of string | Abs of string * lambda | App of lambda * lambda
 
@@ -109,10 +109,13 @@ let string_of_lambda l =
 		match l with
 			Var v -> s ^ v 
 			| Abs (v, x) -> s ^ "(" ^ "\\" ^ v ^ "." ^ (impl x "") ^ ")" 
-			| App (x, y) -> s ^ (impl x "") ^ " " ^ (impl y "") in
+			| App (x, y) -> s ^ "(" ^ (impl x "") ^ " " ^ (impl y "") ^ ")" in
 	impl l "";;
 
-(* Let variable have name of grammar [a...z]{[0...9]}* *)
+(* Parser of lambda expressions for grammar :
+	<lambda> -> <expr> ' ' <abs> | <expr> | <abs>
+	<abs> -> \<var>.<lambda>
+	<expr> -> { <var> | (<lambda>) }+{' '} *)
 (* string -> lambda *)
 let lambda_of_string s =
 	let s = s ^ ";" in
@@ -173,5 +176,5 @@ let lambda_of_string s =
 print_string (string_of_lambda (lambda_of_string "(x)")); print_string "\n";; 
 print_string (string_of_lambda (lambda_of_string "(((((((\\y.y)))))))")); print_string "\n";; 
 print_string (string_of_lambda (lambda_of_string "((z)) (\\x.\\y.((x y)))")); print_string "\n";;
-print_string (string_of_lambda (lambda_of_string "\\x.x y")); print_string "\n";;
 *)
+print_string (string_of_lambda (lambda_of_string "\\x.x (y z)")); print_string "\n";;
