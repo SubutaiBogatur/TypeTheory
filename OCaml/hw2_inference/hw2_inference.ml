@@ -116,17 +116,32 @@ type hm_type = HM_Elem of string | HM_Arrow of hm_type * hm_type | HM_ForAll of 
 
 (* -------------------------- Util functions including IO ------------------ *)
 
+(* print string *)
+let ps s = 
+	print_string s;
+	print_string "\n";;
 
 (* string of hindley milner type *)
-let rec string_of_hmt hmt = match hmt with
+let rec string_of_hmt hmt = 
+		match hmt with
                         HM_Elem v -> v
                         | HM_Arrow(hmt1, hmt2) -> (string_of_hmt hmt1) ^ " -> " ^ (string_of_hmt hmt2) 
                         | HM_ForAll(v, hmt) -> "∀" ^ v ^ "." ^ (string_of_hmt hmt);;
 
 (* string of hindley milner lambda ie term *)
-let string_of_hml hml = failwith "todo";;
+let rec string_of_hml hml =
+	match hml with 
+		HM_Var v -> v
+		| HM_Abs(v, hml) -> ("\\" ^ v ^ "." ^ "(" ^ (string_of_hml hml) ^ ")")
+		| HM_App(hml1, hml2) -> ("(" ^ (string_of_hml hml1) ^ " " ^ (string_of_hml hml2) ^ ")")
+		| HM_Let(v, hml1, hml2) -> ("let " ^ v ^ " = (" ^ (string_of_hml hml1) ^ ") in (" ^ (string_of_hml hml2)) ^ ")";;
+	
 
-let hml_of_string str = failwith "todo";;
+(*
+let testik = HM_Let("id", HM_Abs("x", HM_Var("x")), HM_Abs("x", HM_App(HM_Var("id"), HM_Var("x"))));;
+ps (string_of_hml testik);;
+*)
+
 
 (* print context *)
 let pcxt m = StringMap.iter (fun k v -> (print_string ("{" ^ k ^ " " ^ (string_of_hmt v) ^ "}\n"))) m;;
@@ -135,54 +150,6 @@ let pcxt m = StringMap.iter (fun k v -> (print_string ("{" ^ k ^ " " ^ (string_o
 let print_set s = StringSet.iter (fun s -> (print_string (s ^ "\n"))) s;;
 
 
-
-
-(*
-let Some res = Hw2_unify.solve_system [hta t2, hta t3];;
-*)
-
-
-
-
-
-let merge_subst s2 s1 = StringMap.fold (fun k v map -> if StringMap.mem k map then map else StringMap.add k v map) s2 
-        (StringMap.fold (fun k v map -> StringMap.add k (ms s2 v) map) s1 StringMap.empty);; 
-
-(* returns type with no quantifiers *)
-let rec dwrp t = match t with
-        |HM_ForAll(v, lhs) -> ( ms (StringMap.singleton v (HM_Elem(name_generator ()))) (dwrp lhs))
-        |_ -> t;;
-
-(*subst to context*)
-let stc subst ctxt = StringMap.fold (fun k v map -> (StringMap.add k (ms subst v) map)) ctxt StringMap.empty;;
-
-let rec wepler ctx l = match l with
-        |HM_Var v -> (StringMap.empty, dwrp (StringMap.find v ctx))
-        |HM_App (x, y) -> 
-                        (let s1, t1 = wepler ctx x in
-                        let s2, t2 = wepler (stc s1 ctx) y in
-                        let fresh = name_generator () in
-                        let res = Hw2_unify.solve_system [hta (ms s2 t1), hta
-                        (HM_Arrow(t2, HM_Elem (fresh)))] in
-                        match res with 
-                                |None -> failwith "Robinson fault is not an error" 
-                                |Some r -> (
-                                        let rob_subst = sath r in
-                                        let merged = merge_subst rob_subst (merge_subst s2 s1) in
-                                        (merged, ms merged (HM_Elem fresh))))
-        |HM_Abs (x, y) -> 
-                        (let fresh = name_generator () in
-                        let stmp = StringMap.remove x ctx in
-                        let stmp = StringMap.add x (HM_Elem(fresh)) stmp in
-                        let s1, t1 = wepler stmp y in
-                        (s1, HM_Arrow((ms s1 (HM_Elem(fresh))), t1)))
-        |HM_Let (x, h1, h2) ->
-                        (let s1, t1 = wepler ctx h1 in
-                        let sctx = stc s1 ctx in
-                        let nctx = StringMap.remove x sctx in
-                        let nctx = StringMap.add x (closure t1 sctx) nctx in
-                        let s2, t2 = wepler nctx h2 in
-                        (merge_subst s2 s1, t2));;
 
 (* Algorithm W infers a type for a term in Hindley
 	Milner type system. Basic concepts used in the code:
@@ -200,17 +167,25 @@ let rec wepler ctx l = match l with
 		some of them are rather complex, consider yourself warned *)
 
 let algorithm_w l = 
+	let new_name_counter = ref 0 in
+
+	(* Function generates next fresh name to use as type variable *)     
+        (* unit -> string *)
+        let next_name_generator () =
+                new_name_counter:= !new_name_counter + 1; 
+                "α" ^ string_of_int !new_name_counter in
 	
 	(* function gets hm_type and returns set with all the free
 		type variables in it (ie at least one occurence
 		not under quantifier) *)
 	let free_vars_hmt hmt = 
-		let rec impl hmt blocked = match hmt with
-			HM_Elem v -> if StringSet.mem v blocked 
-					then StringSet.empty
-					else StringSet.singleton v
-			| HM_Arrow (hmt1, hmt2) -> StringSet.union (impl hmt1 blocked) (impl hmt2 blocked)        
-			| HM_ForAll(v, hmt1) -> impl hmt1 (StringSet.add v blocked) in
+		let rec impl hmt blocked = 
+			match hmt with
+				HM_Elem v -> if StringSet.mem v blocked 
+						then StringSet.empty
+						else StringSet.singleton v
+				| HM_Arrow (hmt1, hmt2) -> StringSet.union (impl hmt1 blocked) (impl hmt2 blocked)        
+				| HM_ForAll(v, hmt1) -> impl hmt1 (StringSet.add v blocked) in
 		impl hmt StringSet.empty in
 
 	(* Function returns set with all free !type! vars
@@ -222,15 +197,16 @@ let algorithm_w l =
 		given hmt for all free variables, that are met
 		in given hmt and also not met in context ctx *)
 	let closure hmt ctx = 
-		let fvctx = free_vars_context ctx in
+		let fvctx = free_vars_cxt ctx in
 		let fvhmt = free_vars_hmt hmt in
 		StringSet.fold (fun k t -> HM_ForAll(k, t)) 
 			(StringSet.fold 
 				(fun k set -> if StringSet.mem k fvctx then set else StringSet.add k set) fvhmt StringSet.empty) hmt in
 
 	(* Function applies substitution subst to type hmt *)
-	let apply_substitution subst hmt =
-		let rec impl hmt blocked = match hmt with 
+	let apply_subst subst hmt =
+		let rec impl hmt blocked = 
+			match hmt with 
 				HM_Elem v -> if StringSet.mem v blocked then hmt 
 						else if StringMap.mem v subst 
 								then StringMap.find v subst 
@@ -239,38 +215,75 @@ let algorithm_w l =
 				| HM_ForAll (v, hmt1) -> HM_ForAll(v, impl hmt1 (StringSet.add v blocked)) in 
 		impl hmt StringSet.empty in
 
-	let rec hmt_to_at hmt = match hmt with
-			|HM_Elem v -> Hw2_unify.Var v
-			|HM_Arrow(hmt1, hmt2) -> Hw2_unify.Fun ("impl", [hta hmt1; hta hmt2])
-			|_ -> failwith ("never happens, 'cause according to Artem quantifiers can't be met here");;
+	(* Apply substitution to context *)
+	let apply_subst_cxt subst cxt = StringMap.fold (fun k v map -> (StringMap.add k (apply_subst subst v) map)) cxt StringMap.empty in
 
-	(* no documentation here *)
-	let sath sat = let rec ath a = match a with 
-				|Hw2_unify.Var v -> HM_Elem v
-				|Hw2_unify.Fun ("impl", [a; b]) -> HM_Arrow (ath a, ath b) 
-				|_ -> failwith "no warnings pls" in
-		List.fold_left (fun map (v, t) -> StringMap.add v (ath t) map) StringMap.empty sat;;
+	(* Convert hmt to at to use it later in Robinson unification *)
+	let rec hmt_to_at hmt = 
+		match hmt with
+			HM_Elem v -> Hw2_unify.Var v
+			| HM_Arrow(hmt1, hmt2) -> Hw2_unify.Fun ("impl", [hmt_to_at hmt1; hmt_to_at hmt2])
+			| _ -> failwith "Never happens, 'cause according to Artem, quantifiers can't be met here" in 
 
-        let s, t = wepler StringMap.empty l in
+	(* Convert substritution in algebraic terms ie list (returned by Robinson)
+		to substitution in hmt ie map *)
+	let subst_at_to_subst_hmt subst_at = 
+		let rec at_to_hmt at = 
+			match at with 
+				Hw2_unify.Var v -> HM_Elem v
+				| Hw2_unify.Fun ("impl", [a; b]) -> HM_Arrow (at_to_hmt a, at_to_hmt b) 
+				| _ -> failwith "no warnings pls" in
+		List.fold_left (fun map (var, at) -> StringMap.add var (at_to_hmt at) map) StringMap.empty subst_at in
+
+	(* Function gets two substitutions and merges them. 
+		Firstly s1 is applied, then s2 is applied. So,
+		s2 is applied to s1 in implementation and then merge is made 
+		eg s1 = {x -> u, y -> v}, s2 = {u -> a, x -> b, z -> f} then result is
+			{x -> a, y -> v, z -> f}  *)
+	let merge_subst s2 s1 = 
+		StringMap.fold (fun k v map -> if StringMap.mem k map then map else StringMap.add k v map) s2 
+			(StringMap.fold (fun k v map -> StringMap.add k (apply_subst s2 v) map) s1 StringMap.empty) in
+
+	(* Function is used in the first case of W algo (when hml is var)
+		All the quantifiers (they are only on the surface) are
+		removed from the type and instead of that quantifiers
+		substitution of fresh vars is made *)
+	let rec dewrap hmt = 
+		match hmt with
+			HM_ForAll(v, hmt1) -> (apply_subst (StringMap.singleton v (HM_Elem(next_name_generator ()))) (dewrap hmt1))
+			| _ -> hmt in
+
+
+	(* Algorithm by itself is here. It was written to algorithm
+		scheme described for example in Artem's Ohanjanyan conspect (see github) *)
+	let rec impl ctx hml = 
+		match hml with
+			HM_Var v -> (StringMap.empty, dewrap (StringMap.find v ctx))
+			| HM_App (x, y) -> 
+					(let s1, t1 = impl ctx x in
+					let s2, t2 = impl (apply_subst_cxt s1 ctx) y in
+					let fresh = next_name_generator () in
+					let res = Hw2_unify.solve_system [hmt_to_at (apply_subst s2 t1), hmt_to_at (HM_Arrow(t2, HM_Elem (fresh)))] in
+					match res with 
+						None -> failwith "Robinson fault is not an error" 
+						| Some r -> (
+							let rob_subst = subst_at_to_subst_hmt r in
+							let merged = merge_subst rob_subst (merge_subst s2 s1) in
+							(merged, apply_subst merged (HM_Elem fresh))))
+			| HM_Abs (x, y) -> 
+					(let fresh = next_name_generator () in
+					let stmp = StringMap.remove x ctx in
+					let stmp = StringMap.add x (HM_Elem(fresh)) stmp in
+					let s1, t1 = impl stmp y in
+					(s1, HM_Arrow((apply_subst s1 (HM_Elem(fresh))), t1)))
+			| HM_Let (x, h1, h2) ->
+					(let s1, t1 = impl ctx h1 in
+					let sctx = apply_subst_cxt s1 ctx in
+					let nctx = StringMap.remove x sctx in
+					let nctx = StringMap.add x (closure t1 sctx) nctx in
+					let s2, t2 = impl nctx h2 in
+					(merge_subst s2 s1, t2)) in
+
+        let s, t = impl StringMap.empty l in
+	(* todo catch somehow exceptions and return none *)
         Some ((StringMap.bindings s), t);;
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
