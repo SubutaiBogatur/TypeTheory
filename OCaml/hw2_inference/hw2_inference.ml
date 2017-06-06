@@ -127,7 +127,7 @@ let ps s =
 let rec string_of_hmt hmt = 
 		match hmt with
                         HM_Elem v -> v
-                        | HM_Arrow(hmt1, hmt2) -> (string_of_hmt hmt1) ^ " -> " ^ (string_of_hmt hmt2) 
+                        | HM_Arrow(hmt1, hmt2) -> "(" ^ (string_of_hmt hmt1) ^ " -> " ^ (string_of_hmt hmt2) ^ ")" 
                         | HM_ForAll(v, hmt) -> "∀" ^ v ^ "." ^ (string_of_hmt hmt);;
 
 (* string of hindley milner lambda ie term *)
@@ -172,6 +172,10 @@ let algorithm_w hml =
         let next_name_generator () =
                 new_name_counter:= !new_name_counter + 1; 
                 "α" ^ string_of_int !new_name_counter in
+
+        let initial_name_generator () =
+                new_name_counter:= !new_name_counter + 1; 
+                "ζ" ^ string_of_int !new_name_counter in
 	
 	(* function gets hm_type and returns set with all the free
 		type variables in it (ie at least one occurence
@@ -186,9 +190,19 @@ let algorithm_w hml =
 				| HM_ForAll(v, hmt1) -> impl hmt1 (StringSet.add v blocked) in
 		impl hmt StringSet.empty in
 
+
 	(* Function returns set with all free !type! vars
 		in given context *)	
 	let free_vars_cxt cxt = StringMap.fold (fun k v set -> StringSet.union (free_vars_hmt v) set) cxt StringSet.empty in
+
+	let free_vars_hml hml =
+		let rec impl hml blocked =
+			match hml with
+				HM_Var v -> if StringSet.mem v blocked then StringSet.empty else StringSet.singleton v
+				| HM_Abs(v, hml) -> impl hml (StringSet.add v blocked)
+				| HM_Let(v, hml1, hml2) -> StringSet.union (impl hml1 blocked) (impl hml2 (StringSet.add v blocked))
+				| HM_App(hml1, hml2) -> StringSet.union (impl hml1 blocked) (impl hml2 blocked) in 
+		impl hml StringSet.empty in
 
 	(* Closure is an operation made on hmt. It returns new hmt.
 		What is done: ForAll quantifiers are added to
@@ -284,9 +298,11 @@ let algorithm_w hml =
 					let s2, t2 = impl nctx h2 in
 					(merge_subst s2 s1, t2)) in
 
+	let free_set = free_vars_hml hml in
+	let initial_context = StringSet.fold (fun var map -> StringMap.add var (HM_Elem(initial_name_generator ())) map) free_set StringMap.empty in
 	try
 	 	(* todo add free vars search for hml *)	
-        	let set, hmt = impl StringMap.empty hml in
+        	let set, hmt = impl initial_context hml in
         	Some ((StringMap.bindings set), hmt)
 	with (InferenceException msg) ->
 		if debug_enabled then ps msg else print_string "";

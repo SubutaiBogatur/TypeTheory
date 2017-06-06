@@ -99,8 +99,10 @@ let t1t = "let id = \\x.x in \\f.\\x.id (id (id x))";;
 let t2t = "let id = \\x.x in \\f.\\x.id f (id (id x))";; 
 let t3f = "let id = \\x.x in \\f.\\x.id f (id x (id x))";; 
 let t4t = "let id = \\t.t in \\f.\\x.(id f) (id x)";;
+let t5t = "\\f.\\x.f (f x)";; (* here (a -> a) -> a -> a , cool *)
+let t6t = "let id = \\t.t in (id f) (id x)";; (* here (a -> a) -> a -> a , cool *)
 
-test t1t;;
+test t6t;;
 
 
 
