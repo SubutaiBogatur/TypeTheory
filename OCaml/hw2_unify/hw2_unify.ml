@@ -225,6 +225,8 @@ exception NoSolution of string;;
 
 module StringSet = Set.Make (String);;
 
+let debug_enabled = false;;
+
 let solve_system sys =
 
 	(* Function builds a system for arguments. The system will look like [l1[i]=l2[i];...] *)
@@ -241,7 +243,7 @@ let solve_system sys =
 	(* Function solves the system. It gets system and set of resolved vars *)
 	(* sys -> StringSet -> sys *)
 	let rec impl sys resolved =
-		psys sys;
+		if debug_enabled then psys sys else print_string "";
 		if StringSet.cardinal resolved = List.length sys then sys else (* If all eqs are resolved return resolved system*)	
 		match sys with
 			[] -> raise (NoSolution "Empty system")
@@ -269,13 +271,12 @@ let solve_system sys =
 
 	try 
 		let resolved_system = impl sys StringSet.empty in
-		print_string "Answer: \n";
-		psys resolved_system;
+		if debug_enabled then (print_string "Answer: \n"; psys resolved_system) else print_string "";
 		(Some (dewrap resolved_system))
 
-	with (NoSolution msg) -> print_string msg;
-				print_string "\n";
-				None;;
+	with (NoSolution msg) -> 
+		if debug_enabled then (print_string msg; print_string "\n") else print_string "";
+		None;;
 				
 
 	

@@ -1,5 +1,7 @@
 
 
+let debug_enabled = false;;
+
 (* ------------------- Working with primitive lambda calculus --------------------- *)
 
 type simp_type = S_Elem of string | S_Arrow of simp_type * simp_type
@@ -135,12 +137,6 @@ let rec string_of_hml hml =
 		| HM_Abs(v, hml) -> ("\\" ^ v ^ "." ^ "(" ^ (string_of_hml hml) ^ ")")
 		| HM_App(hml1, hml2) -> ("(" ^ (string_of_hml hml1) ^ " " ^ (string_of_hml hml2) ^ ")")
 		| HM_Let(v, hml1, hml2) -> ("let " ^ v ^ " = (" ^ (string_of_hml hml1) ^ ") in (" ^ (string_of_hml hml2)) ^ ")";;
-	
-
-(*
-let testik = HM_Let("id", HM_Abs("x", HM_Var("x")), HM_Abs("x", HM_App(HM_Var("id"), HM_Var("x"))));;
-ps (string_of_hml testik);;
-*)
 
 
 (* print context *)
@@ -150,6 +146,7 @@ let pcxt m = StringMap.iter (fun k v -> (print_string ("{" ^ k ^ " " ^ (string_o
 let print_set s = StringSet.iter (fun s -> (print_string (s ^ "\n"))) s;;
 
 
+exception InferenceException of string;; 
 
 (* Algorithm W infers a type for a term in Hindley
 	Milner type system. Basic concepts used in the code:
@@ -166,7 +163,8 @@ let print_set s = StringSet.iter (fun s -> (print_string (s ^ "\n"))) s;;
 	Subsequent code uses folds on sets, maps and lists a lot and
 		some of them are rather complex, consider yourself warned *)
 
-let algorithm_w l = 
+let algorithm_w hml = 
+
 	let new_name_counter = ref 0 in
 
 	(* Function generates next fresh name to use as type variable *)     
@@ -258,14 +256,16 @@ let algorithm_w l =
 		scheme described for example in Artem's Ohanjanyan conspect (see github) *)
 	let rec impl ctx hml = 
 		match hml with
-			HM_Var v -> (StringMap.empty, dewrap (StringMap.find v ctx))
+			HM_Var v -> 
+				if not (StringMap.mem v ctx) then raise (InferenceException "Free variable encountered")
+				else (StringMap.empty, dewrap (StringMap.find v ctx))
 			| HM_App (x, y) -> 
 					(let s1, t1 = impl ctx x in
 					let s2, t2 = impl (apply_subst_cxt s1 ctx) y in
 					let fresh = next_name_generator () in
 					let res = Hw2_unify.solve_system [hmt_to_at (apply_subst s2 t1), hmt_to_at (HM_Arrow(t2, HM_Elem (fresh)))] in
 					match res with 
-						None -> failwith "Robinson fault is not an error" 
+						None -> raise (InferenceException "Robinson has failed to unificate types") 
 						| Some r -> (
 							let rob_subst = subst_at_to_subst_hmt r in
 							let merged = merge_subst rob_subst (merge_subst s2 s1) in
@@ -284,6 +284,13 @@ let algorithm_w l =
 					let s2, t2 = impl nctx h2 in
 					(merge_subst s2 s1, t2)) in
 
-        let s, t = impl StringMap.empty l in
-	(* todo catch somehow exceptions and return none *)
-        Some ((StringMap.bindings s), t);;
+	try
+	 	(* todo add free vars search for hml *)	
+        	let set, hmt = impl StringMap.empty hml in
+        	Some ((StringMap.bindings set), hmt)
+	with (InferenceException msg) ->
+		if debug_enabled then ps msg else print_string "";
+		None;;
+
+
+

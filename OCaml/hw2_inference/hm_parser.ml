@@ -81,3 +81,26 @@ let hml_of_string s =
 						| _ -> parse_name ()))) in
 
 	parse_hml ();; 
+
+
+let test str =
+	ps ("Testing:        " ^ str);
+	let hml = hml_of_string str in
+	ps ("Parsed version: " ^ (Hw2_inference.string_of_hml hml));
+	match (Hw2_inference.algorithm_w hml) with
+		None -> ps "Unable to infer type with W"
+		| Some (cxt, hmt) -> 
+			(ps ("Infered type: " ^ (Hw2_inference.string_of_hmt hmt));
+			List.iter (fun (v, hmt) -> ps ("{" ^ v ^ " : " ^ (Hw2_inference.string_of_hmt hmt) ^ "}")) cxt;
+			ps "\n");; 
+
+
+let t1t = "let id = \\x.x in \\f.\\x.id (id (id x))";; 
+let t2t = "let id = \\x.x in \\f.\\x.id f (id (id x))";; 
+let t3f = "let id = \\x.x in \\f.\\x.id f (id x (id x))";; 
+let t4t = "let id = \\t.t in \\f.\\x.(id f) (id x)";;
+
+test t1t;;
+
+
+
