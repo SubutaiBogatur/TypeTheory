@@ -5,7 +5,8 @@ open Hw1
 
 module StringSet = Set.Make (String);;
 
-(* Function returns set with all free (ie not under lambdas) vars in l *)
+(* Function returns set with all free (ie at least one occurencenot under lambda)
+	 vars in l *)
 (* lambda -> StringSet -> StringSet*)	
 let rec all_free_vars l blocked =
 	match l with
@@ -104,17 +105,35 @@ let normal_beta_reduction lm =
 		ie if simplification was made and new lambda *)
 	let rec impl lm =
 		match lm with
-		Var x -> (false, Var x)
-		| App(Abs(x, ri), ro) -> (true, subst ri x ro)
-		| App(l, r) -> 
-			let flag, l_new = impl l in
-			if flag then 
-				(true, App(l_new, r)) else
-				let flag, r_new = impl r in
-				(flag, App(l_new, r_new)) 
-		| Abs(x, r) -> impl r in
+			Var x -> (false, Var x)
+			| App(Abs(x, ri), ro) -> (true, subst ri x ro)
+			| App(l, r) -> 
+				let flag, l_new = impl l in
+				if flag then 
+					(true, App(l_new, r)) else
+					let flag, r_new = impl r in
+					(flag, App(l_new, r_new)) 
+			| Abs(x, r) -> impl r in
+
 	let has_happened, new_lm = impl lm in
 	new_lm;;
 
 
-let reduce_to_normal_form l = failwith "not implemented yet";;
+let reduce_to_normal_form l = 
+	let rec impl l =
+		print_string (string_of_bool (is_normal_form l));
+		print_string "\n";
+		print_string (Hw1.string_of_lambda l);
+		print_string "\n\n";
+		if is_normal_form l
+			then l
+			else impl (normal_beta_reduction l) in
+	impl l;;
+
+print_string (Hw1.string_of_lambda (reduce_to_normal_form (Hw1.lambda_of_string "((\\l0.((\\l1.((\\l2.((\\l3.((\\l4.((\\l5.((\\l6.((\\l7.((\\l8.((\\l9.((\\l10.((\\l11.((\\l12.((\\l13.((\\l14.((\\l15.((\\l16.((\\l17.((\\l18.(l18 (\\l19.(\\l20.(l19 (l19 (l19 (l19 (l19 (l19 (l19 (l19 (l19 l20))))))))))))) (\\l18.(l4 (((l17 l18) (\\l19.(\\l20.l20))) l18))))) (l0 (\\l17.(\\l18.(\\l19.(\\l20.(((l1 ((l9 l19) l20)) l19) ((\\l21.(((l1 ((l16 (l14 l21)) l18)) (((l17 l18) ((l6 l21) (\\l22.(\\l23.(l22 l23))))) l20)) (((l17 l18) l19) l21))) (l15 ((l6 l19) l20))))))))))) (l0 (\\l16.(\\l17.(\\l18.((l10 (l8 l17)) (((l1 (l8 l18)) l3) ((l16 ((l7 l17) (\\l19.(\\l20.(l19 l20))))) ((l7 l18) (\\l19.(\\l20.(l19 l20))))))))))))) (l0 (\\l15.(\\l16.(((l1 (l8 (l4 l16))) (\\l17.(\\l18.l18))) ((l6 (\\l17.(\\l18.(l17 l18)))) (l15 (l4 (l4 l16)))))))))) (\\l14.(\\l15.(l14 (l14 l15)))))) (\\l13.((((l0 (\\l14.(\\l15.(\\l16.(\\l17.(((l1 (l8 l15)) l17) (((l14 (l4 l15)) l17) ((l6 l16) l17)))))))) l13) (\\l14.(\\l15.l15))) (\\l14.(\\l15.(l14 l15))))))) (\\l12.(\\l13.(\\l14.((l14 l12) l13)))))) (l0 (\\l11.(\\l12.(\\l13.(((l1 (l8 l12)) (\\l14.(\\l15.l15))) ((l6 l13) ((l11 (l4 l12)) l13))))))))) (\\l10.(\\l11.(((l1 l10) l2) l11))))) (l0 (\\l9.(\\l10.(\\l11.((\\l12.((\\l13.(((l1 l12) l13) (((l1 l13) l12) ((l9 (l4 l10)) (l4 l11))))) (l8 l11))) (l8 l10)))))))) (\\l8.((l8 (\\l9.l3)) l2)))) (\\l7.(\\l8.((l8 l4) l7))))) (\\l6.(\\l7.((l6 l5) l7))))) (\\l5.(\\l6.(\\l7.((l5 l6) (l6 l7))))))) (\\l4.(\\l5.(\\l6.(((l4 (\\l7.(\\l8.(l8 (l7 l5))))) (\\l7.l6)) (\\l7.l7))))))) (\\l3.(\\l4.l4)))) (\\l2.(\\l3.l2)))) (\\l1.(\\l2.(\\l3.((l1 l2) l3)))))) (\\l0.((\\l1.(l0 (l1 l1))) (\\l1.(l0 (l1 l1))))))")));;
+
+(*
+print_string (Hw1.string_of_lambda (reduce_to_normal_form (Hw1.lambda_of_string "(\\x.x) y")));;
+*)
+
+

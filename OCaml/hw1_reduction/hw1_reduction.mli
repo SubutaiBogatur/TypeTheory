@@ -10,6 +10,9 @@ val free_vars: lambda -> string list
 (* Проверить, находится ли лямбда-выражение в нормальной форме *)
 val is_normal_form: lambda -> bool
 
+(* Проверить, альфа-эквивалентны ли лямбда-выражения *)
+val is_alpha_equivalent: lambda -> lambda -> bool
+
 (* Выполнить один шаг бета-редукции, используя нормальный порядок *)
 val normal_beta_reduction: lambda -> lambda
 

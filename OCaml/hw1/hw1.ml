@@ -196,5 +196,4 @@ print_string (string_of_lambda (lambda_of_string "\\l.\\i.\\f.\\e.(l) (i) (f) (e
 print_string (string_of_lambda (lambda_of_string "x y z")); print_string "\n";;
 print_string (string_of_lambda (lambda_of_string "(x y) z")); print_string "\n";;
 *)
-print_string (string_of_lambda (lambda_of_string "((\\f.(\\x.f (x x)) (\\x.f (x x))) (\\f.\\n.(\\n.n (\\x.\\x.\\y.y) \\x.\\y.x) n (\\f.\\x.f x) ((\\a.\\b.a ((\\a.\\b.\\f.\\x.a f (b f x)) b) \\f.\\x.x) n (f ((\\n.(\\p.p \\x.\\y.x) (n (\\p.\\f.f ((\\p.p \\x.\\y.y) p) ((\\n.\\f.\\x.f (n f x)) ((\\p.p \\x.\\y.y) p))) (\\f.f (\\f.\\x.x) (\\f.\\x.x)))) n))))) \\f.\\x.f (f (f (f (f (f x)))))")); print_string "\n";;
 
