@@ -98,37 +98,60 @@ let is_alpha_equivalent x y =
 			| _ -> false in
 	impl x y;; 
 
-let counter = ref 0;;
+module StringMap = Map.Make(String)
 
-let normal_beta_reduction lm =
+let ps s = 
+	print_string s;
+	print_string "\n";;
+
+(* Function changes names of all arguments, that are also free vars. 
+	As a result, lambda is converted to alpha-equivalent one,
+	all argument names, that coincide with free vars are changed to 
+	fresh ones *)
+let rename_arguments lm =
+	let counter = ref 0 in
 	let get_fresh_name () =
-		counter := !counter + 1; 
-		"ϑ" ^ (string_of_int !counter) in
+		counter := !counter + 1;
+		"ϑ" ^ (string_of_int !counter) in 
 
-	(* Function renames all free vars in provided lambda and 
-		gives them fresh names *)
-	let rename_free lm =
-		let free_v = free_vars lm in
-		List.fold_right (fun var lm -> subst lm var (Var(get_fresh_name ()))) free_v lm in
+	(* Function traverses the tree and changes all arguments, whose name
+		coincide with free_vars to new ones *)
+	let rec hepler lm map =
+		match lm with
+			Var v -> if (StringMap.mem v map) then (Var (StringMap.find v map)) else lm
+			| Abs(v, l) ->  
+				(let nn = get_fresh_name () in
+				(Abs(nn, hepler l (StringMap.add v nn map)))) 
+			| App(lr, ll) -> App(hepler lr map, hepler ll map) in
+
+	hepler lm StringMap.empty;;
 	
+
+(* This function is needed to assist in beta reduction. It makes
+	one step in normal order. lm is lambda to make step in. *)
+let normal_beta_reduction_helper lm =
 	(* Function tries to find first beta redex and
 		simplify it. It returns pair: (bool, lambda)
 		ie if simplification was made and new lambda *)
 	let rec impl lm =
 		match lm with
 			Var x -> (false, Var x)
-			| App(Abs(x, ri), ro) -> (true, subst ri x (rename_free ro))
+			| App(Abs(x, ri), ro) -> (true, subst ri x ro)
 			| App(l, r) -> 
 				let flag, l_new = impl l in
 				if flag then 
 					(true, App(l_new, r)) else
 					let flag, r_new = impl r in
 					(flag, App(l_new, r_new)) 
-			| Abs(x, r) -> impl r in
+			| Abs(x, r) -> 
+				let flag, l_new = impl r in
+				(flag, Abs(x, l_new)) in
 
 	let has_happened, new_lm = impl lm in
 	new_lm;;
 
+let normal_beta_reduction lm =
+	normal_beta_reduction_helper (rename_arguments lm);;
 
 let reduce_to_normal_form l = 
 	let rec impl l =
@@ -139,8 +162,18 @@ let reduce_to_normal_form l =
 		if is_normal_form l
 			then l
 			else impl (normal_beta_reduction l) in
-	impl l;;
+	impl (rename_arguments l);;
 
-let test_sample = "(\\f.\\x.f x) x a";; (* sample, which was fixed *)
-print_string (Hw1.string_of_lambda (reduce_to_normal_form (Hw1.lambda_of_string test_sample)));;
+let t0 = "(\\f.\\x.f x) x a";; (* sample, which was fixed *)
+let k = "(\\x.\\y.x)";;
+let i = "(\\x.x)";;
+let s = "(\\x.\\y.\\z.x z (y z))";;
+let w = "(\\x.x x)";;
+let omega = "(" ^ w ^ " " ^ w ^ ")";;
+let t1 = k ^ " a " ^ omega;;
+let t2 = "(\\x.x) x x";;
+let t3 = "(\\f.\\x.f x) (\\f.\\x.x)";;
+let t4 = "(\\x.((\\f.(\\x.x)) x))";;
+
+print_string (Hw1.string_of_lambda (reduce_to_normal_form (Hw1.lambda_of_string t4)));;
 
