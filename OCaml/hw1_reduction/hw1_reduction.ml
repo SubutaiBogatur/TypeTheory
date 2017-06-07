@@ -153,6 +153,10 @@ let normal_beta_reduction_helper lm =
 let normal_beta_reduction lm =
 	normal_beta_reduction_helper (rename_arguments lm);;
 
+(* This function reduced given lambda to normal form. 
+	This functio DOES NOT use memoization.
+	Nevertheless it was accepted as homework
+	thanks to bonus *)
 let reduce_to_normal_form l = 
 	let rec impl l =
 		print_string (string_of_bool (is_normal_form l));
@@ -164,16 +168,19 @@ let reduce_to_normal_form l =
 			else impl (normal_beta_reduction l) in
 	impl (rename_arguments l);;
 
-let t0 = "(\\f.\\x.f x) x a";; (* sample, which was fixed *)
+let t0 = "(\\f.\\x.f x) x a";; (* x a *)
 let k = "(\\x.\\y.x)";;
 let i = "(\\x.x)";;
 let s = "(\\x.\\y.\\z.x z (y z))";;
 let w = "(\\x.x x)";;
-let omega = "(" ^ w ^ " " ^ w ^ ")";;
-let t1 = k ^ " a " ^ omega;;
-let t2 = "(\\x.x) x x";;
-let t3 = "(\\f.\\x.f x) (\\f.\\x.x)";;
+let omega = "(" ^ w ^ " " ^ w ^ ")";; (* it does not have normal form as expected *)
+let t1 = k ^ " a " ^ omega;; (* a *)
+let t2 = "(\\x.x) x x";; (* x x *)
+let t3 = "(\\f.\\x.f x) (\\f.\\x.x)";; 
 let t4 = "(\\x.((\\f.(\\x.x)) x))";;
 
-print_string (Hw1.string_of_lambda (reduce_to_normal_form (Hw1.lambda_of_string t4)));;
+let t5 = "(\\f.\\x.f (f (f (f x)))) (\\f.\\x.f (f (f (f x))))";; (* 4 in the power of 4 *)
+let t6 = "(\\f.\\x.f (f (f (f (f x))))) (\\f.\\x.f (f (f (f (f x)))))";; (* 5 in the power of 5, careful, takes long time *)
+
+print_string (Hw1.string_of_lambda (reduce_to_normal_form (Hw1.lambda_of_string t5)));;
 
