@@ -98,7 +98,18 @@ let is_alpha_equivalent x y =
 			| _ -> false in
 	impl x y;; 
 
+let counter = ref 0;;
+
 let normal_beta_reduction lm =
+	let get_fresh_name () =
+		counter := !counter + 1; 
+		"ϑ" ^ (string_of_int !counter) in
+
+	(* Function renames all free vars in provided lambda and 
+		gives them fresh names *)
+	let rename_free lm =
+		let free_v = free_vars lm in
+		List.fold_right (fun var lm -> subst lm var (Var(get_fresh_name ()))) free_v lm in
 	
 	(* Function tries to find first beta redex and
 		simplify it. It returns pair: (bool, lambda)
@@ -106,7 +117,7 @@ let normal_beta_reduction lm =
 	let rec impl lm =
 		match lm with
 			Var x -> (false, Var x)
-			| App(Abs(x, ri), ro) -> (true, subst ri x ro)
+			| App(Abs(x, ri), ro) -> (true, subst ri x (rename_free ro))
 			| App(l, r) -> 
 				let flag, l_new = impl l in
 				if flag then 
@@ -130,11 +141,6 @@ let reduce_to_normal_form l =
 			else impl (normal_beta_reduction l) in
 	impl l;;
 
-(*
-print_string (Hw1.string_of_lambda (reduce_to_normal_form (Hw1.lambda_of_string "((\\l0.((\\l1.((\\l2.((\\l3.((\\l4.((\\l5.((\\l6.((\\l7.((\\l8.((\\l9.((\\l10.((\\l11.((\\l12.((\\l13.((\\l14.((\\l15.((\\l16.((\\l17.((\\l18.(l18 (\\l19.(\\l20.(l19 (l19 (l19 (l19 (l19 (l19 (l19 (l19 (l19 l20))))))))))))) (\\l18.(l4 (((l17 l18) (\\l19.(\\l20.l20))) l18))))) (l0 (\\l17.(\\l18.(\\l19.(\\l20.(((l1 ((l9 l19) l20)) l19) ((\\l21.(((l1 ((l16 (l14 l21)) l18)) (((l17 l18) ((l6 l21) (\\l22.(\\l23.(l22 l23))))) l20)) (((l17 l18) l19) l21))) (l15 ((l6 l19) l20))))))))))) (l0 (\\l16.(\\l17.(\\l18.((l10 (l8 l17)) (((l1 (l8 l18)) l3) ((l16 ((l7 l17) (\\l19.(\\l20.(l19 l20))))) ((l7 l18) (\\l19.(\\l20.(l19 l20))))))))))))) (l0 (\\l15.(\\l16.(((l1 (l8 (l4 l16))) (\\l17.(\\l18.l18))) ((l6 (\\l17.(\\l18.(l17 l18)))) (l15 (l4 (l4 l16)))))))))) (\\l14.(\\l15.(l14 (l14 l15)))))) (\\l13.((((l0 (\\l14.(\\l15.(\\l16.(\\l17.(((l1 (l8 l15)) l17) (((l14 (l4 l15)) l17) ((l6 l16) l17)))))))) l13) (\\l14.(\\l15.l15))) (\\l14.(\\l15.(l14 l15))))))) (\\l12.(\\l13.(\\l14.((l14 l12) l13)))))) (l0 (\\l11.(\\l12.(\\l13.(((l1 (l8 l12)) (\\l14.(\\l15.l15))) ((l6 l13) ((l11 (l4 l12)) l13))))))))) (\\l10.(\\l11.(((l1 l10) l2) l11))))) (l0 (\\l9.(\\l10.(\\l11.((\\l12.((\\l13.(((l1 l12) l13) (((l1 l13) l12) ((l9 (l4 l10)) (l4 l11))))) (l8 l11))) (l8 l10)))))))) (\\l8.((l8 (\\l9.l3)) l2)))) (\\l7.(\\l8.((l8 l4) l7))))) (\\l6.(\\l7.((l6 l5) l7))))) (\\l5.(\\l6.(\\l7.((l5 l6) (l6 l7))))))) (\\l4.(\\l5.(\\l6.(((l4 (\\l7.(\\l8.(l8 (l7 l5))))) (\\l7.l6)) (\\l7.l7))))))) (\\l3.(\\l4.l4)))) (\\l2.(\\l3.l2)))) (\\l1.(\\l2.(\\l3.((l1 l2) l3)))))) (\\l0.((\\l1.(l0 (l1 l1))) (\\l1.(l0 (l1 l1))))))")));;
-*)
-(*
-print_string (Hw1.string_of_lambda (reduce_to_normal_form (Hw1.lambda_of_string "(\\x.x) y")));;
-*)
-
+let test_sample = "(\\f.\\x.f x) x a";; (* sample, which was fixed *)
+print_string (Hw1.string_of_lambda (reduce_to_normal_form (Hw1.lambda_of_string test_sample)));;
 
